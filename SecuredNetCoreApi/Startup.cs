@@ -45,7 +45,7 @@ namespace SecuredNetCoreApi
 
              }).AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
-
+            services.AddAuthorization();
             services.AddAuthentication(auth =>
             {
                 auth.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -53,12 +53,15 @@ namespace SecuredNetCoreApi
 
             }).AddJwtBearer(option =>
             {
+                option.RequireHttpsMetadata = false;
+                option.SaveToken = true;
                 option.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidAudience = "http://khizar.dev",
-                    ValidIssuer = "http://khizar.dev",
+                    ValidateLifetime = true,
+                    ValidAudience = Configuration.GetValue<string>("secretkey:ValidAudience"),
+                    ValidIssuer = Configuration.GetValue<string>("secretkey:ValidIssuer"),
                     RequireExpirationTime = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetValue<string>("secretkey:key"))),
                     ValidateIssuerSigningKey = true
@@ -87,6 +90,7 @@ namespace SecuredNetCoreApi
             app.UseRouting();
 
             app.UseAuthorization();
+            app.UseAuthentication();
 
             app.UseEndpoints(endpoints =>
             {

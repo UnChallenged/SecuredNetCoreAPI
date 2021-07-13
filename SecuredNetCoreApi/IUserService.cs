@@ -1,8 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using SecuredNetCoreApi.Models;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SecuredNetCoreApi
@@ -10,14 +15,71 @@ namespace SecuredNetCoreApi
     public interface IUserService
     {
         Task<UserManagerResponse> RegisterUserAsync(RegisterModel model);
+        Task<UserManagerResponse> LoginUserAsync(LoginModel model);
     }
     public class UserService : IUserService
     {
         private UserManager<IdentityUser> _userManager;
-        public UserService(UserManager<IdentityUser> userManager)
+        private IConfiguration _configuration;
+
+        public UserService(UserManager<IdentityUser> userManager,IConfiguration configuration)
         {
             _userManager = userManager;
+            _configuration = configuration;
         }
+
+        public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
+        {
+            if (model == null)
+            {
+                throw new NullReferenceException("Register model is null");
+            }
+            else
+            {
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if(user==null)
+                {
+                    return new UserManagerResponse
+                    {
+                        Message = "there is no user with that email",
+                        IsSuccess = false,
+                    };
+                }
+                var result = await _userManager.CheckPasswordAsync(user, model.Password);
+                    if(!result)
+                    {
+                    return new UserManagerResponse
+                    {
+                        Message = "Invalid Password",
+                        IsSuccess = false,
+                    };
+                   
+                }
+                else
+                {
+                    var claims = new[]
+                    {
+                        new Claim("Email",model.Email),
+                        new Claim(ClaimTypes.NameIdentifier,user.Id),
+                    };
+                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetValue<string>("secretkey:key")));
+                    var token = new JwtSecurityToken(
+                      issuer: _configuration.GetValue<string>("secretkey:ValidIssuer"),
+                      audience: _configuration.GetValue<string>("secretkey:ValidAudience"),
+                      claims: claims,
+                      expires: DateTime.Now.AddDays(30),
+                      signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+                    string tokenasString = new JwtSecurityTokenHandler().WriteToken(token);
+                    return new UserManagerResponse
+                    {
+                        Message = tokenasString,
+                        IsSuccess = true,
+                        ExpireDate = token.ValidTo
+                    };
+                }
+            }
+        }
+
         public async Task<UserManagerResponse> RegisterUserAsync(RegisterModel model)
         {
             if(model==null)
@@ -34,7 +96,7 @@ namespace SecuredNetCoreApi
             }
             var identityUser = new IdentityUser
             {
-                //Email = model.Email,
+                Email = model.Email,
                 UserName = model.UserName,
             };
             var result = await _userManager.CreateAsync(identityUser, model.Password);

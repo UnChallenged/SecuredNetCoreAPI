@@ -38,5 +38,26 @@ namespace SecuredNetCoreApi.Controllers
                 return BadRequest("Properties not valid");
             }
         }
+        [HttpPost("Login")]
+        public async Task<IActionResult> LoginAsync([FromBody]LoginModel model)
+        {
+            if(ModelState.IsValid)
+            {
+                var result = await _userService.LoginUserAsync(model);
+                if(result.IsSuccess)
+                {
+                    return Ok(result);
+
+                }
+                else
+                {
+                    return BadRequest();
+                }
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
     }
 }
