@@ -62,10 +62,10 @@ namespace SecuredNetCoreApi
                         new Claim("Email",model.Email),
                         new Claim(ClaimTypes.NameIdentifier,user.Id),
                     };
-                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetValue<string>("secretkey:key")));
+                    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretkey:key"]));
                     var token = new JwtSecurityToken(
-                      issuer: _configuration.GetValue<string>("secretkey:ValidIssuer"),
-                      audience: _configuration.GetValue<string>("secretkey:ValidAudience"),
+                      issuer: _configuration["secretkey:ValidIssuer"],
+                      audience: _configuration["secretkey:ValidAudience"],
                       claims: claims,
                       expires: DateTime.Now.AddDays(30),
                       signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));

@@ -45,7 +45,7 @@ namespace SecuredNetCoreApi
 
              }).AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
-            services.AddAuthorization();
+            
             services.AddAuthentication(auth =>
             {
                 auth.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -53,20 +53,18 @@ namespace SecuredNetCoreApi
 
             }).AddJwtBearer(option =>
             {
-                option.RequireHttpsMetadata = false;
-                option.SaveToken = true;
-                option.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                option.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidAudience = Configuration.GetValue<string>("secretkey:ValidAudience"),
-                    ValidIssuer = Configuration.GetValue<string>("secretkey:ValidIssuer"),
+                    ValidAudience = Configuration["secretkey:ValidAudience"],
+                    ValidIssuer = Configuration["secretkey:ValidIssuer"],
                     RequireExpirationTime = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetValue<string>("secretkey:key"))),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["secretkey:key"])),
                     ValidateIssuerSigningKey = true
                 };
             });
+            services.AddAuthorization();
             services.AddScoped<IUserService, UserService>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -89,8 +87,9 @@ namespace SecuredNetCoreApi
 
             app.UseRouting();
 
-            app.UseAuthorization();
             app.UseAuthentication();
+            app.UseAuthorization();
+            
 
             app.UseEndpoints(endpoints =>
             {
