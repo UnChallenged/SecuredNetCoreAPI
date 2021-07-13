@@ -64,6 +64,7 @@ namespace SecuredNetCoreApi
                     ValidateIssuerSigningKey = true
                 };
             });
+            services.AddScoped<IUserService, UserService>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
