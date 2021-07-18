@@ -42,6 +42,8 @@ namespace SecuredNetCoreApi
                  option.Password.RequireDigit = true;
                  option.Password.RequireLowercase = true;
                  option.Password.RequiredLength = 5;
+                 option.User.RequireUniqueEmail = true;
+
 
              }).AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();

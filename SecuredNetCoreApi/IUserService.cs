@@ -63,6 +63,7 @@ namespace SecuredNetCoreApi
                     {
                         new Claim("Email",model.Email),
                         new Claim(ClaimTypes.NameIdentifier,user.Id),
+                        new Claim(ClaimTypes.Role,GetRoleFromUserIDAsync(user).ToString())
                        
                     };
                     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretkey:key"]));
@@ -125,6 +126,13 @@ namespace SecuredNetCoreApi
                     Error = result.Errors.Select(e => e.Description)
                 };
             }
+            
+        }
+        public async Task<string> GetRoleFromUserIDAsync(IdentityUser user)
+        {
+            var rolename = await _userManager.FindByIdAsync(user.Id);
+            
+            return rolename.ToString();
         }
     }
 }
