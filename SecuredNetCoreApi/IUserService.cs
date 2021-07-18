@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using SecuredNetCoreApi.Enum;
 using SecuredNetCoreApi.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -20,6 +21,7 @@ namespace SecuredNetCoreApi
     }
     public class UserService : IUserService
     {
+        private ApplicationDbContext _db;
         private UserManager<IdentityUser> _userManager;
         private IConfiguration _configuration;
         private RoleManager<IdentityRole> _roleManager;
@@ -59,11 +61,12 @@ namespace SecuredNetCoreApi
                 }
                 else
                 {
+                    var role = string.Join(",", await _userManager.GetRolesAsync(user));
                     var claims = new[]
                     {
                         new Claim("Email",model.Email),
-                        new Claim(ClaimTypes.NameIdentifier,user.Id),
-                        new Claim(ClaimTypes.Role,GetRoleFromUserIDAsync(user).ToString())
+                        new Claim("ID",user.Id),
+                        new Claim("Role",role),
                        
                     };
                     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretkey:key"]));
@@ -130,9 +133,10 @@ namespace SecuredNetCoreApi
         }
         public async Task<string> GetRoleFromUserIDAsync(IdentityUser user)
         {
-            var rolename = await _userManager.FindByIdAsync(user.Id);
             
-            return rolename.ToString();
+            var roles = await _userManager.GetRolesAsync(user);
+            string joined = string.Join(",", roles);
+            return joined;
         }
     }
 }
