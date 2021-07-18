@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using SecuredNetCoreApi.Enum;
 using SecuredNetCoreApi.Models;
 using System;
 using System.Collections.Generic;
@@ -21,11 +22,12 @@ namespace SecuredNetCoreApi
     {
         private UserManager<IdentityUser> _userManager;
         private IConfiguration _configuration;
-
-        public UserService(UserManager<IdentityUser> userManager,IConfiguration configuration)
+        private RoleManager<IdentityRole> _roleManager;
+        public UserService(RoleManager<IdentityRole> roleManager,UserManager<IdentityUser> userManager,IConfiguration configuration)
         {
             _userManager = userManager;
             _configuration = configuration;
+            _roleManager = roleManager;
         }
 
         public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
@@ -61,6 +63,7 @@ namespace SecuredNetCoreApi
                     {
                         new Claim("Email",model.Email),
                         new Claim(ClaimTypes.NameIdentifier,user.Id),
+                       
                     };
                     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretkey:key"]));
                     var token = new JwtSecurityToken(
@@ -102,6 +105,11 @@ namespace SecuredNetCoreApi
             var result = await _userManager.CreateAsync(identityUser, model.Password);
             if(result.Succeeded)
             {
+                if (!(await _roleManager.RoleExistsAsync(Roles.Basic.ToString())))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole(Roles.Basic.ToString()));
+                }
+                await _userManager.AddToRoleAsync(identityUser, Roles.Basic.ToString());
                 return new UserManagerResponse
                 {
                     Message = "User Created Successfully",
