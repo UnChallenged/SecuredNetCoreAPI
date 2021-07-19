@@ -135,8 +135,7 @@ namespace SecuredNetCoreApi
         {
             
             var roles = await _userManager.GetRolesAsync(user);
-            string joined = string.Join(",", roles);
-            return joined;
+            return string.Join(",", roles);
         }
     }
 }
