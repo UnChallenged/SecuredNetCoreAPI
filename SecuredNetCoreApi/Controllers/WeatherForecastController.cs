@@ -11,7 +11,7 @@ namespace SecuredNetCoreApi.Controllers
     
     [ApiController]
     [Route("[controller]")]
-    [Authorize]
+    [Authorize(Policy = Policy.Policy.Basic)]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]

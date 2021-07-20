@@ -53,6 +53,7 @@ namespace SecuredNetCoreApi
                 auth.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 auth.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 
+
             }).AddJwtBearer(option =>
             {
                 option.TokenValidationParameters = new TokenValidationParameters
@@ -66,7 +67,13 @@ namespace SecuredNetCoreApi
                     ValidateIssuerSigningKey = true
                 };
             });
-            services.AddAuthorization();
+            services.AddAuthorization(config =>
+            {
+                config.AddPolicy(Policy.Policy.Admin, Policy.Policy.AdminPolicy());
+                config.AddPolicy(Policy.Policy.SuperAdmin, Policy.Policy.ModeratorPolicy());
+                config.AddPolicy(Policy.Policy.Moderator, Policy.Policy.ModeratorPolicy());
+                config.AddPolicy(Policy.Policy.Basic, Policy.Policy.BasicPolicy());
+            });
             services.AddScoped<IUserService, UserService>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
