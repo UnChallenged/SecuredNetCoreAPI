@@ -11,5 +11,7 @@ namespace SecuredNetCoreApi.Models
         public string UserId { get; set; }
         public string Token { get; set; }
         public DateTime? ExpireDate { get; set; }
+
+        public virtual AspNetUser User { get; set; }
     }
 }
