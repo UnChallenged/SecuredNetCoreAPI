@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -61,6 +62,8 @@ namespace SecuredNetCoreApi
                 }
                 else
                 {
+                    RefreshToken refreshtoken = GenerateRefreshToken();
+                    AspNetUser
                     var role = string.Join(",", await _userManager.GetRolesAsync(user));
                     var claims = new[]
                     {
@@ -86,7 +89,19 @@ namespace SecuredNetCoreApi
                 }
             }
         }
-
+        private RefreshToken GenerateRefreshToken()
+        {
+            RefreshToken refreshtoken = new RefreshToken();
+            
+            var randomNumber = new Byte[32];
+            using(var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+                refreshtoken.Token = Convert.ToBase64String(randomNumber);
+            }
+            refreshtoken.ExpireDate = DateTime.UtcNow.AddDays(30);
+            return refreshtoken;
+        }
         public async Task<UserManagerResponse> RegisterUserAsync(RegisterModel model)
         {
             if(model==null)
