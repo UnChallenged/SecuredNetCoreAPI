@@ -26,11 +26,13 @@ namespace SecuredNetCoreApi
         private UserManager<IdentityUser> _userManager;
         private IConfiguration _configuration;
         private RoleManager<IdentityRole> _roleManager;
-        public UserService(RoleManager<IdentityRole> roleManager,UserManager<IdentityUser> userManager,IConfiguration configuration)
+        private NetSecuredAPIContext _netSecuredAPIContext;
+        public UserService(NetSecuredAPIContext netSecuredAPIContext, RoleManager<IdentityRole> roleManager,UserManager<IdentityUser> userManager,IConfiguration configuration)
         {
             _userManager = userManager;
             _configuration = configuration;
             _roleManager = roleManager;
+            _netSecuredAPIContext = netSecuredAPIContext;
         }
 
         public async Task<UserManagerResponse> LoginUserAsync(LoginModel model)
@@ -63,7 +65,11 @@ namespace SecuredNetCoreApi
                 else
                 {
                     RefreshToken refreshtoken = GenerateRefreshToken();
-                    AspNetUser
+                    refreshtoken.UserId = user.Id;
+
+                    _netSecuredAPIContext.RefreshTokens.Add(refreshtoken);
+                    await _netSecuredAPIContext.SaveChangesAsync();
+
                     var role = string.Join(",", await _userManager.GetRolesAsync(user));
                     var claims = new[]
                     {
@@ -84,7 +90,8 @@ namespace SecuredNetCoreApi
                     {
                         Message = tokenasString,
                         IsSuccess = true,
-                        ExpireDate = token.ValidTo
+                        ExpireDate = token.ValidTo,
+                        RefreshToken= refreshtoken.Token
                     };
                 }
             }

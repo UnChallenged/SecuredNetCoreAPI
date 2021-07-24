@@ -11,5 +11,6 @@ namespace SecuredNetCoreApi.Models
         public bool IsSuccess { get; set; }
         public IEnumerable<string> Error { get; set; }
         public DateTime? ExpireDate { get; set; }
+        public string? RefreshToken { get; set; }
     }
 }
