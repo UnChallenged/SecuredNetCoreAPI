@@ -1,4 +1,4 @@
 # SecuredNetCoreAPI
 
-<b>Register/Login using Microsoft Identity.<br>
-<b>Role/Policy based Api Secured. ex: SuperAdmin,Admin,Moderator,Basic
+Register/Login using Microsoft Identity.<br>
+Role/Policy based Api Secured. ex: SuperAdmin,Admin,Moderator,Basic
