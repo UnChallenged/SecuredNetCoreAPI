@@ -19,6 +19,7 @@ namespace SecuredNetCoreApi
     {
         Task<UserManagerResponse> RegisterUserAsync(RegisterModel model);
         Task<UserManagerResponse> LoginUserAsync(LoginModel model);
+        Task<UserManagerResponse> RefreshRequest(RefreshRequest refreshrequest);
     }
     public class UserService : IUserService
     {
@@ -158,6 +159,91 @@ namespace SecuredNetCoreApi
             
             var roles = await _userManager.GetRolesAsync(user);
             return string.Join(",", roles);
+        }
+
+        public async Task<UserManagerResponse> RefreshRequest(RefreshRequest refreshrequest)
+        {
+            AspNetUser user = GetUserFromAccessToken(refreshrequest.AccessToken);
+            if(user!=null && ValidateRefreshToken(user,refreshrequest.RefreshToken))
+            {
+                var user_ = await _userManager.FindByEmailAsync(user.Email);
+                RefreshToken refreshtoken = GenerateRefreshToken();
+                refreshtoken.UserId = user.Id;
+                var role = string.Join(",", await _userManager.GetRolesAsync(user_));
+                var claims = new[]
+                {
+                        new Claim("Email",user_.Email),
+                        new Claim("ID",user_.Id),
+                        new Claim("Role",role),
+
+                    };
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretkey:key"]));
+                var token = new JwtSecurityToken(
+                  issuer: _configuration["secretkey:ValidIssuer"],
+                  audience: _configuration["secretkey:ValidAudience"],
+                  claims: claims,
+                  expires: DateTime.Now.AddDays(30),
+                  signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+                string tokenasString = new JwtSecurityTokenHandler().WriteToken(token);
+                return new UserManagerResponse
+                {
+                    Message = tokenasString,
+                    IsSuccess = true,
+                    ExpireDate = token.ValidTo,
+                    RefreshToken = refreshtoken.Token
+                };
+            }
+            return null;
+        }
+
+        private bool ValidateRefreshToken(AspNetUser user, string refreshToken)
+        {
+          RefreshToken refreshtoken= _netSecuredAPIContext.RefreshTokens.Where(rt => rt.Token == refreshToken)
+                .OrderByDescending(rt => rt.ExpireDate)
+                .FirstOrDefault(); 
+            if(refreshToken!=null &&
+                refreshtoken.UserId==user.Id &&
+                refreshtoken.ExpireDate>DateTime.UtcNow)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            
+        }
+
+        private AspNetUser GetUserFromAccessToken(string accessToken)
+        {
+            var tokenhandler = new JwtSecurityTokenHandler();
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretkey:key"]));
+
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidAudience = _configuration["secretkey:ValidAudience"],
+                ValidIssuer = _configuration["secretkey:ValidIssuer"],
+                RequireExpirationTime = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["secretkey:key"])),
+                ValidateIssuerSigningKey = true
+            };
+            SecurityToken securityToken;
+
+
+           var principle= tokenhandler.ValidateToken(accessToken, tokenValidationParameters, out securityToken);
+            JwtSecurityToken jwtSecurityToken = securityToken as JwtSecurityToken;
+            if(jwtSecurityToken!=null && jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,StringComparison.InvariantCultureIgnoreCase))
+            {
+                var userid = principle.FindFirst(ClaimTypes.Name)?.Value;
+               return _netSecuredAPIContext.AspNetUsers.Where(u => u.Id == userid).FirstOrDefault();
+            }
+            else
+            {
+                return null;
+            }
+            
         }
     }
 }

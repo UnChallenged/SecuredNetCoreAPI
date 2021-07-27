@@ -59,5 +59,18 @@ namespace SecuredNetCoreApi.Controllers
                 return BadRequest();
             }
         }
+        [HttpPost("RefreshToken")]
+        public async Task<IActionResult> RefreshRequest([FromBody] RefreshRequest refreshrequest)
+        {
+            var result = await _userService.RefreshRequest(refreshrequest);
+            if(result!=null)
+            {
+                return Ok(result);
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
     }
 }
